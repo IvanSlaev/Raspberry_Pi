@@ -39,6 +39,7 @@ static int master_reset(void)
 {
 	static int rc = 0;
 	
+	rc++;
 	gpio_direction_output(PIN, 0); 	/* pull the bus low */
 	udelay(480);
 	gpio_direction_input(PIN);	/* release the bus */
