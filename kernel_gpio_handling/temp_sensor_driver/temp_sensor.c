@@ -44,6 +44,7 @@ static int master_reset(void)
 	
 	gpio_direction_output(PIN, 0); 	/* pull the bus low */
 	udelay(480);
+	gpio_direction_output(PIN, 1); 	/* pull the bus high */
 	gpio_direction_input(PIN);	/* release the bus */
 	udelay(60); 			/* wait for the maximum DS18B20 reaction time */
 	
