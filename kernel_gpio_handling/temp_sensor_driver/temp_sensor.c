@@ -6,15 +6,15 @@
 #include <linux/delay.h>
 #include <linux/workqueue.h>
 
-#define SKIP_ROM 	0xCC
-#define READ_ROM 	0x33
-#define CONVERT_T 	0x44
-#define READ_SCRATHPAD 	0xBE
+#define SKIP_ROM		0xCC
+#define READ_ROM		0x33
+#define CONVERT_T		0x44
+#define READ_SCRATHPAD	0xBE
 
-#define PIN 		4
-#define GPIO_NAME 	TEMP_PIN
-#define WQ_NAME 	"work_queue"
-#define WQ_HZ_DELAY 	HZ/10
+#define PIN				4
+#define GPIO_NAME		TEMP_PIN
+#define WQ_NAME			"work_queue"
+#define WQ_HZ_DELAY		HZ/10
 
 static void work_handler(struct work_struct *work);
 
@@ -45,8 +45,8 @@ static int master_reset(void)
 	gpio_direction_output(PIN, 0); 	/* pull the bus low */
 	udelay(480);
 	gpio_direction_output(PIN, 1); 	/* pull the bus high */
-	gpio_direction_input(PIN);	/* release the bus */
-	udelay(60); 			/* wait for the maximum DS18B20 reaction time */
+	gpio_direction_input(PIN);		/* release the bus */
+	udelay(60); 					/* wait for the maximum DS18B20 reaction time */
 	
 	if (gpio_get_value(PIN) != 0) {
 		if (rc > 4) {							/* try maximum 4 times */
@@ -102,14 +102,9 @@ static uint8_t read_bit(void)
 static void write_command(uint8_t command)
 {
 	int i;
-	int mask;
+	int mask = 1;
 
-	mask = 1;
-	
-	for (i = 0; i < 8; i++)
-	{
-		write_bit((command >> i) & mask);
-	}
+	for (i = 0; i < 8; i++) write_bit((command >> i) & mask);
 }
 
 static uint64_t read_rom(void)
@@ -118,10 +113,7 @@ static uint64_t read_rom(void)
 	uint64_t rom;
 	rom = 0;
 	
-	for (i = 0; i < 64; i++)
-	{
-		rom |= (read_bit() << i);
-	}
+	for (i = 0; i < 64; i++) rom |= (read_bit() << i);
 	pr_err("ROM VALUE: %ld\n", (long)rom); /*not an err just for readability in dmesg */
 	
 	return rom;
@@ -133,55 +125,39 @@ static uint16_t read_temp(void)
 	uint16_t temp;
 	temp = 0;
 	
-	for (i = 0; i < 16; i++)
-	{
-		temp |= (read_bit() << i);
-	}
+	for (i = 0; i < 16; i++) temp |= (read_bit() << i);
 	pr_err("TEMPERATURE VALUE: 0x%x\n", temp); /* raw hex value in kernel module only, not an err just for readability in dmesg */
+	
 	return temp;
 }
 
 static void work_handler(struct work_struct *work)
 {
 	/* read ROM */
-	if (master_reset())
-	{
-		return;
-	}
+	if (master_reset()) return;
 	write_command(READ_ROM);
 	read_rom();
 	mdelay(1);
 	
 	/* init convertion */
-	if (master_reset())
-	{
-		return;
-	}
+	if (master_reset()) return;
 	write_command(SKIP_ROM);
 	write_command(CONVERT_T);
-	while (read_bit() == 0)
-	{
-		mdelay(1);
-	}
+
+	while (read_bit() == 0) mdelay(1);
 	
 	/* when ready, read temp */
-	if (master_reset())
-	{
-		return;
-	}
+	if (master_reset()) return;
 	write_command(SKIP_ROM);
 	write_command(READ_SCRATHPAD);
 	read_temp();
-	if (master_reset())
-	{
-		return;
-	}
+	if (master_reset()) return;
 }
 
 static int __init my_init(void)
 {
-	int ret;
-	pr_info("Module Raspberry Pi\n");
+	int error = 0;
+	pr_info("Temp Module Init\n");
 	
 	bus_pin_init();
 
@@ -190,21 +166,28 @@ static int __init my_init(void)
 		pr_info("WQ created\n");
 	} else {
 		pr_err("No workqueue created\n");
+		error--; 
 	}
 
-	ret = queue_delayed_work(led_wq, &led_w, WQ_HZ_DELAY);
+	if (!error) {
+		int ret = queue_delayed_work(led_wq, &led_w, WQ_HZ_DELAY);
+		if (!ret) {
+			pr_err("Delayed work not queued\n");
+			error--;
+		}
+	}
 
-	return 0;
+	return error;
 }
 
 static void __exit my_exit(void)
 {
-	pr_info("Goodbye, Module Raspberry Pi\n");
-	
 	cancel_delayed_work_sync(&led_w);
 	destroy_workqueue(led_wq);
 	
 	gpio_free(PIN);
+	
+	pr_info("Goodbye, Temp Module Exit\n");
 }
 
 module_init(my_init);
