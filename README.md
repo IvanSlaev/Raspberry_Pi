@@ -10,7 +10,7 @@ CROSS COMPILATION for Raspbian kernel 4.9.y (thanks to www.grendelman.net)
 on your host x64 machine terminal:
 
 cd
- 
+
 mkdir ~/raspberrypi
 
 cd ~/raspberrypi
@@ -24,6 +24,8 @@ cd linux
 make -j n ARCH=arm CROSS_COMPILE=~/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf- bcm2709_defconfig
 
 make -j n ARCH=arm CROSS_COMPILE=~/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-
+
+OR https://www.raspberrypi.org/documentation/linux/kernel/building.md - use same locations on the host
 
 Now you have a cross compiled linux kernel (in ~/raspberrypi/linux) and cross compilation tools (in ~/raspberrypi/tools).
 To compile modules against it you just need to use Makefiles.onhost(do not forget to specify the module name in Makefile).
