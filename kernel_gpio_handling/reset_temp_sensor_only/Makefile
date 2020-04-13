@@ -1,6 +1,6 @@
 obj-m := temp_sensor.o
 
-KDIR := ~/linux
+KDIR := ~/raspberrypi/linux
 PWD := $(shell pwd)
 
 default:

@@ -1,6 +1,6 @@
 obj-m := traffic_light.o
 
-KDIR := ~/linux
+KDIR := ~/raspberrypi/linux
 PWD := $(shell pwd)
 
 default:
